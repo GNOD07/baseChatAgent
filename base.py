@@ -186,3 +186,52 @@ dog = Dog()
 cat = Cat()
 animal_speak(dog)  # 输出: Woof!
 animal_speak(cat)  # 输出: Meow!
+
+# 5. async/await 异步编程
+print("\n5. async/await 异步编程")
+# Python 3.5 引入了 async/await 语法，使得编写异步代码更加简洁和易读。与 JavaScript 的 async/await 类似，Python 的 async/await 也是基于协程的异步编程模型。
+# 在等待 I/O（比如网络请求、读写文件、调用大模型 API）的时候，不要傻等，先去干别的活。
+# 核心语法三要素：
+# async def：定义一个协程函数（Coroutine）。调用它不会立刻执行，而是返回一个协程对象（类似 JS 里还没加 await 的 Promise）。
+# await：只能用在 async def 里面。遇到 await，当前任务会主动挂起（让出 CPU），等耗时操作完成后，再回来继续往下走。
+# asyncio.run()：程序的总入口。用来启动并运行最顶层的异步主函数。
+
+import asyncio
+
+async def fetch_data(task_name, delay):
+    print(f"Fetching data for {task_name}...")
+    # 模拟网络延迟（注意：千万别用 time.sleep，那是同步阻塞，会把整个程序卡死！）
+    await asyncio.sleep(delay)  # 模拟异步等待，非阻塞
+    print(f"Data for {task_name} fetched after {delay} seconds.")
+    return f"{task_name} 的数据"
+
+async def main():
+    print("Starting main function...")
+    # 这里的 await 会等待 fetch_data 执行完拿到结果，才会赋值给 result
+    result = await fetch_data("任务1", 2)
+    print(f"主函数拿到结果: {result}")
+    print("Main function is doing other work while waiting for data...")
+
+# 固定写法
+asyncio.run(main())  # 启动异步主函数，运行整个异步程序
+
+# 并发执行asyncio.gather（高并发爬虫/AI调用的核心）
+# 如果你要同时爬取 10 个网页，或者同时让 AI 总结 5 篇文章，绝对不能一个一个 await（那样就是串行了）。你需要用 asyncio.gather 把它们打包并发执行（类似 JS 的 Promise.all）。
+
+async def fetch_url(url_id):
+    print("开始下载网页", url_id)
+    await asyncio.sleep(1)  # 模拟网络延迟
+    print("下载完成网页", url_id)
+    return f"网页{url_id}的内容"
+
+async def main_concurrent():
+    urls = range(5)  # 模拟5个网页
+    # 生成一堆任务列表
+    tasks = [fetch_url(url_id) for url_id in urls]
+    # asyncio.gather 会并发执行所有任务，等它们全部完成后才继续往下走
+    print("开始并发下载网页...")
+    # gather 会同时触发这 5 个任务，总耗时约等于最慢的那个任务（1秒），而不是 5 秒！
+    results = await asyncio.gather(*tasks)  # *tasks 是把列表解包成单独的参数传给 gather
+    print("所有网页下载完成，结果:", results)
+
+asyncio.run(main_concurrent())  # 启动并发主函数
